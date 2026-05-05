@@ -1,0 +1,265 @@
+AI Memory OS can be integrated as either a full chat API or a lightweight memory retrieval API. This gives product teams flexibility: they can either let Memory OS handle the full personalized response flow, or simply fetch relevant memory and plug it into their existing LLM stack. For enterprise customers, the system supports API keys, user-level memory isolation, audit logs, and user-controlled deletion.
+
+How to Integrate AI Memory OS Into User Systems
+
+Think of AI Memory OS as a memory API layer that sits between the user’s chatbot/app and the LLM.
+
+User System / Chatbot
+        ↓
+AI Memory OS API
+        ↓
+Memory Database
+        ↓
+LLM
+        ↓
+Personalized Response
+1. Integration Option 1: Direct API Integration
+
+Best for:
+
+Web apps
+Mobile apps
+SaaS products
+Internal copilots
+Customer support bots
+Flow
+1. User sends message in chatbot
+2. Chatbot sends userId + message to AI Memory OS
+3. Memory OS fetches relevant memories
+4. Memory OS adds memory to prompt
+5. Memory OS calls LLM
+6. Personalized response returns to chatbot
+Example Request
+POST /api/chat
+{
+  "userId": "user_123",
+  "message": "Help me prepare for interviews"
+}
+Example Response
+{
+  "answer": "Since you're preparing for AI PM interviews and prefer concise answers, focus on product sense, AI system design, and metrics.",
+  "memoriesUsed": [
+    "User is preparing for AI PM interviews",
+    "User prefers concise answers"
+  ]
+}
+2. Integration Option 2: Memory-Only API
+
+Here, the user’s system keeps calling its own LLM, but uses your API only to fetch memory.
+
+Flow
+User System
+   ↓
+GET relevant memory from Memory OS
+   ↓
+User System builds prompt
+   ↓
+User System calls its own LLM
+Example
+GET /api/memory/user_123
+
+Response:
+
+{
+  "memories": [
+    "User prefers concise answers",
+    "User is preparing for AI PM roles",
+    "User likes Microsoft examples"
+  ]
+}
+
+Then the user’s chatbot creates prompt:
+
+Use this memory:
+- User prefers concise answers
+- User is preparing for AI PM roles
+
+User question:
+How should I prepare for interviews?
+
+This is good when companies already have their own AI stack.
+
+3. Integration Option 3: SDK Integration
+
+For easier developer adoption, expose an SDK.
+
+JavaScript SDK Example
+import { MemoryOS } from "ai-memory-os";
+
+const memory = new MemoryOS({
+  apiKey: process.env.MEMORY_OS_API_KEY
+});
+
+const memories = await memory.getMemories("user_123");
+
+const response = await memory.chat({
+  userId: "user_123",
+  message: "Help me prepare for interviews"
+});
+Why SDK helps
+
+It makes integration feel simple:
+
+Install package
+Add API key
+Call memory.chat()
+
+This is useful for developer-facing AI platforms.
+
+4. Integration Option 4: Chatbot Plugin / Connector
+
+You can integrate with:
+
+Slack
+Microsoft Teams
+Discord
+Intercom
+Zendesk
+Website chat widgets
+Example Slack Flow
+Slack message
+   ↓
+Slack bot backend
+   ↓
+AI Memory OS API
+   ↓
+LLM response
+   ↓
+Reply in Slack
+Slack Bot Request
+{
+  "userId": "slack_U123",
+  "channelId": "C123",
+  "message": "Summarize my priorities for today"
+}
+
+Memory OS can remember:
+
+User's team
+Communication style
+Current projects
+Preferred summary format
+5. Integration Option 5: MCP / Tool Integration
+
+MCP is optional, not required.
+
+Use MCP later if you want AI assistants to call Memory OS as a standard tool.
+
+MCP-style tools
+get_user_memory
+save_user_memory
+delete_user_memory
+search_user_memory
+Example
+Assistant receives user query
+        ↓
+Assistant calls get_user_memory
+        ↓
+Memory OS returns relevant context
+        ↓
+Assistant answers with personalization
+
+Use this in roadmap, not MVP.
+
+Core APIs to Expose
+1. Save Memory
+POST /api/memory
+{
+  "userId": "user_123",
+  "memory": "User prefers concise answers",
+  "type": "preference",
+  "source": "explicit"
+}
+2. Get All Memories
+GET /api/memory/user_123
+{
+  "userId": "user_123",
+  "memories": [
+    {
+      "id": "mem_001",
+      "text": "User prefers concise answers",
+      "type": "preference",
+      "createdAt": "2026-05-05"
+    }
+  ]
+}
+3. Search Relevant Memory
+POST /api/memory/search
+{
+  "userId": "user_123",
+  "query": "Help me prepare for interviews"
+}
+{
+  "memories": [
+    "User is preparing for AI PM roles",
+    "User prefers concise answers"
+  ]
+}
+4. Chat With Memory
+POST /api/chat
+{
+  "userId": "user_123",
+  "message": "How should I prepare for interviews?"
+}
+5. Delete Memory
+DELETE /api/memory/mem_001
+Integration Architecture
+Customer App
+   ↓
+Auth / User ID
+   ↓
+AI Memory OS API Gateway
+   ↓
+Memory Service
+   ↓
+Memory Store
+   ↓
+Retrieval Engine
+   ↓
+Prompt Builder
+   ↓
+LLM
+   ↓
+Customer App Response
+What Users Need to Integrate
+
+They need:
+
+1. API key
+2. User ID
+3. Endpoint URL
+4. Chatbot message
+5. Optional metadata
+
+Example metadata:
+
+{
+  "userId": "user_123",
+  "message": "Write a follow-up email",
+  "metadata": {
+    "app": "sales_copilot",
+    "team": "sales",
+    "role": "account_executive"
+  }
+}
+Security Requirements
+
+For enterprise integration, include:
+
+API keys
+OAuth / SSO
+Tenant isolation
+Encryption at rest
+Encryption in transit
+Role-based access
+Audit logs
+Memory delete controls
+Privacy Controls Users Must Have
+
+Every integrated system should show:
+
+View memory
+Edit memory
+Delete memory
+Pause memory
+Private mode
